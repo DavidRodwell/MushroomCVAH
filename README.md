@@ -6,5 +6,5 @@ It can be run locally by running the following code in R:
 
 ```R
 library(shiny)
-runGitHub("MushroomCVAH","DavidRodwell")
+runGitHub("MushroomCVAH","DavidRodwell", ref="main")
 ```
