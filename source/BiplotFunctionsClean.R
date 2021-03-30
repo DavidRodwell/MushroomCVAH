@@ -3188,14 +3188,14 @@ if (dim.biplot == 2 & !is.null(prior.p))
    Nmat <- t(G) %*% G
    H.bar <- solve(Nmat) %*% t(G) %*% Hmat.cent
 
-   Z.region <- biplot.create.regions2(Z=Z.means.mat,region.style=class.regions,Z_true = Z[sample(1:nrow(Z), size = 1000),])
+   Z.region <- biplot.create.regions2(Z=Z.means.mat,region.style=class.regions,Z_true = Z)
    
 }
 
 
 if (dim.biplot == 2)
    draw.biplot(
-      Z = Z[sample(1:nrow(Z), size = 1000),],
+      Z = Z,
       G = G,
       classes = classes,
       Z.means = Z.means.mat,
@@ -3417,6 +3417,7 @@ CVA_H<-
       }
       Hmat <- as.matrix(Hmat)
       
+      
       dimnames(Hmat) <- dimnames(X)
       again <- TRUE
       RSS.old <- NULL
@@ -3471,9 +3472,9 @@ CVA_H<-
             }
          }
          Hmat.cent <- cbind(N.mat %*% Hmat, Xcont.cent)
+         
       }
-      
-      
+  
       #------------Use Hmat as an input into CVA--------------#
       
       
@@ -3529,7 +3530,6 @@ CVA_H<-
       
       
       #------------Continue with CATPCA biplot plotting------#
-      
       
       
       
@@ -3638,6 +3638,7 @@ CVA_H<-
          ax.nominal <- NULL
       if (!ax.ordinal.present)
          ax.ordinal <- NULL
+   
       
       axes.direction <-
          solve(diag(diag(t(Vr.all) %*% Vr.all)), tol=1e-40) %*% t(Vr.all) %*% rotate.mat %*% reflect.mat
@@ -3833,8 +3834,7 @@ CVA_H<-
          my.sample.col <- colorRampPalette(colour.scheme)
          samples$col <- my.sample.col(samples$col)
       }
-      
-      
+     
       
       samples <- do.call("biplot.sample.control", c(J, samples))
       
@@ -3871,9 +3871,7 @@ CVA_H<-
          if (class.dim > K) { warning ("classification in 2D")
             class.dim <- 2 
          }
-         
-         
-         
+     
          #   Z.region <- biplot.create.regions2(Z,region.style = class.regions, plot.range = plot.range, region.mid = Z.means.mat, 
          #                                      rotate.mat = rotate.mat, reflect.mat = reflect.mat, region.func = biplot.LDA.class.func, 
          #                                      class.means = Hopt.bar %*% Mmat[,1:class.dim,drop=F], n = n, Mrr=solve(Mmat)[1:2,,drop=F], 
@@ -3884,7 +3882,7 @@ CVA_H<-
          
          class.regions$space.fill<-2
          #Z.region <- biplot.create.regions2(Z=Z.means.mat,region.style=class.regions,Z_true = Z)
-         Z.region <- biplot.create.regions2(Z=Z.means.mat,region.style=class.regions,Z_true = Z[sample(1:nrow(Z), size = 1000),])
+         Z.region <- biplot.create.regions2(Z=Z.means.mat,region.style=class.regions,Z_true = Z)
          
       }
       
@@ -3897,7 +3895,7 @@ CVA_H<-
       
       if (dim.biplot == 2)
          draw.biplot(
-            Z = Z[sample(1:nrow(Z), size = 1000),],
+            Z = Z,
             G = G,
             classes = classes,
             Z.means = Z.means.mat,
