@@ -2872,7 +2872,7 @@ CATPCAbiplot <- function (X, Xcont=NULL, factor.type=rep("nom", ncol(X)), G = NU
                           font.3d = 2, predictions.3D = TRUE, size.ax.3d = 0.5, size.means.3d = 10, size.points.3d = 5, 
                           xTitles.3d = c("", "", "Dim 1", "Dim 2", "Dim 3"), ID.labs = FALSE, ID.3d = 1:nrow(X), 
                           large.scale = FALSE, ort.lty = 1,prior.p = NULL,class.regions = list(...),
-                          region.colours=NULL, epsilon=1e-3,class.dim=dim.biplot[1],...) 
+                          region.colours=NULL, epsilon=1e-6,class.dim=dim.biplot[1],...) 
 {  dim.biplot <- dim.biplot[1]
 if (dim.biplot != 1 & dim.biplot != 2 & dim.biplot != 3) stop("Only 1D, 2D and 3D biplots")
 e.vects <- e.vects[1:dim.biplot]
@@ -3188,14 +3188,14 @@ if (dim.biplot == 2 & !is.null(prior.p))
    Nmat <- t(G) %*% G
    H.bar <- solve(Nmat) %*% t(G) %*% Hmat.cent
 
-   Z.region <- biplot.create.regions2(Z=Z.means.mat,region.style=class.regions,Z_true = Z)
+   Z.region <- biplot.create.regions2(Z=Z.means.mat,region.style=class.regions,Z_true = Z[sample(1:nrow(Z), size = 1000),])
    
 }
 
 
 if (dim.biplot == 2)
    draw.biplot(
-      Z = Z,
+      Z = Z[sample(1:nrow(Z), size = 1000),],
       G = G,
       classes = classes,
       Z.means = Z.means.mat,
@@ -3314,7 +3314,7 @@ CVA_H<-
              ID.3d = 1:nrow(X),
              large.scale = FALSE,
              ort.lty = 1,
-             epsilon = 1e-3,
+             epsilon = 1e-6,
              class.dim=dim.biplot[1],
              ...)
    {
@@ -3417,7 +3417,6 @@ CVA_H<-
       }
       Hmat <- as.matrix(Hmat)
       
-      print("gets before iteration")
       dimnames(Hmat) <- dimnames(X)
       again <- TRUE
       RSS.old <- NULL
@@ -3472,10 +3471,9 @@ CVA_H<-
             }
          }
          Hmat.cent <- cbind(N.mat %*% Hmat, Xcont.cent)
-         print(iter)
       }
       
-      print("Obtains H mat")
+      
       #------------Use Hmat as an input into CVA--------------#
       
       
@@ -3533,7 +3531,7 @@ CVA_H<-
       #------------Continue with CATPCA biplot plotting------#
       
       
-      print("gets to CVA things")
+      
       
       Lz <- rep(NA, p)
       for (i in 1:p)
@@ -3640,7 +3638,6 @@ CVA_H<-
          ax.nominal <- NULL
       if (!ax.ordinal.present)
          ax.ordinal <- NULL
-      print("gets to axes")
       
       axes.direction <-
          solve(diag(diag(t(Vr.all) %*% Vr.all)), tol=1e-40) %*% t(Vr.all) %*% rotate.mat %*% reflect.mat
@@ -3837,7 +3834,7 @@ CVA_H<-
          samples$col <- my.sample.col(samples$col)
       }
       
-      print("gets before Sample Control")
+      
       
       samples <- do.call("biplot.sample.control", c(J, samples))
       
@@ -3875,7 +3872,7 @@ CVA_H<-
             class.dim <- 2 
          }
          
-         print("gets before Z region")
+         
          
          #   Z.region <- biplot.create.regions2(Z,region.style = class.regions, plot.range = plot.range, region.mid = Z.means.mat, 
          #                                      rotate.mat = rotate.mat, reflect.mat = reflect.mat, region.func = biplot.LDA.class.func, 
@@ -3887,7 +3884,7 @@ CVA_H<-
          
          class.regions$space.fill<-2
          #Z.region <- biplot.create.regions2(Z=Z.means.mat,region.style=class.regions,Z_true = Z)
-         Z.region <- biplot.create.regions2(Z=Z.means.mat,region.style=class.regions,Z_true = Z)
+         Z.region <- biplot.create.regions2(Z=Z.means.mat,region.style=class.regions,Z_true = Z[sample(1:nrow(Z), size = 1000),])
          
       }
       
@@ -3900,7 +3897,7 @@ CVA_H<-
       
       if (dim.biplot == 2)
          draw.biplot(
-            Z = Z,
+            Z = Z[sample(1:nrow(Z), size = 1000),],
             G = G,
             classes = classes,
             Z.means = Z.means.mat,
