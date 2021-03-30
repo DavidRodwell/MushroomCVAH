@@ -1,0 +1,12 @@
+name: ShinyApp
+title: ShinyApp
+username:
+account: cvabiplot
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2775045
+bundleId: 3610005
+url: https://cvabiplot.shinyapps.io/ShinyApp/
+when: 1599644340.24349
+asMultiple: FALSE
+asStatic: FALSE

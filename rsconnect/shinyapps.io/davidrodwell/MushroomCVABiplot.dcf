@@ -1,0 +1,12 @@
+name: MushroomCVABiplot
+title: MushroomCVABiplot
+username:
+account: davidrodwell
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3887319
+bundleId: 4413377
+url: https://davidrodwell.shinyapps.io/MushroomCVABiplot/
+when: 1617137913.60119
+asMultiple: FALSE
+asStatic: FALSE
