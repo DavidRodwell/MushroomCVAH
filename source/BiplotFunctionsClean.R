@@ -2872,7 +2872,7 @@ CATPCAbiplot <- function (X, Xcont=NULL, factor.type=rep("nom", ncol(X)), G = NU
                           font.3d = 2, predictions.3D = TRUE, size.ax.3d = 0.5, size.means.3d = 10, size.points.3d = 5, 
                           xTitles.3d = c("", "", "Dim 1", "Dim 2", "Dim 3"), ID.labs = FALSE, ID.3d = 1:nrow(X), 
                           large.scale = FALSE, ort.lty = 1,prior.p = NULL,class.regions = list(...),
-                          region.colours=NULL, epsilon=1e-6,class.dim=dim.biplot[1],...) 
+                          region.colours=NULL, epsilon=1e-1,class.dim=dim.biplot[1],...) 
 {  dim.biplot <- dim.biplot[1]
 if (dim.biplot != 1 & dim.biplot != 2 & dim.biplot != 3) stop("Only 1D, 2D and 3D biplots")
 e.vects <- e.vects[1:dim.biplot]
@@ -3314,7 +3314,7 @@ CVA_H<-
              ID.3d = 1:nrow(X),
              large.scale = FALSE,
              ort.lty = 1,
-             epsilon = 1e-6,
+             epsilon = 1e-1,
              class.dim=dim.biplot[1],
              ...)
    {
