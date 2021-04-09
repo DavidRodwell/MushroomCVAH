@@ -205,7 +205,8 @@ biplot.ax.control <- function (p, X.names, which = 1:p, type = "prediction", col
 }
 
 biplot.nominal.ax.control <- function (p, X.names, num.levels, which = 1:p, col = NULL, lwd = 1, lty = 1, label = "Orthog", 
-                                       label.col = grey(0.7), label.cex = 0.75, label.dist = 0, tick.col = grey(0.7), 
+                                       label.col = "black",#grey(0.7), 
+                                       label.cex = 0.75, label.dist = 0, tick.col = "black",#grey(0.7), 
                                        tick.size = 1, tick.label = T, tick.label.col = tick.col, tick.label.cex = 0.6, 
                                        tick.label.side = "left", tick.label.offset = 0.5, tick.label.pos = 1,
                                        predict.col = grey(0.7), predict.lwd = lwd, predict.lty = lty, 
@@ -1728,16 +1729,18 @@ draw.biplot <- function (Z, G = matrix(1, nrow = nrow(Z), ncol = 1), classes = 1
             }
 }
 .marker.func <- function(vec, coef, col, tick.size, side, pos, offset, label.col, cex) {
+          posin <- pos
+          if (posin == 0) posin <- NULL
           x <- as.numeric(vec[1])
           y <- as.numeric(vec[2])
           marker.val <- vec[3]
           label.on.off <- as.numeric(vec[4])
           if (is.na(coef[2])) 
-            .marker.label.cm(x, y, grad = "h", marker.val, expand = tick.size, col = col, label.on.off = label.on.off, side = side, pos = pos, offset = offset, label.col = label.col, cex = cex)
+            .marker.label.cm(x, y, grad = "h", marker.val, expand = tick.size, col = col, label.on.off = label.on.off, side = side, pos = posin, offset = offset, label.col = label.col, cex = cex)
           else if (coef[2] == 0) 
-                 .marker.label.cm(x, y, grad = "v", marker.val, expand = tick.size, col = col, label.on.off = label.on.off, side = side, pos = pos, offset = offset, label.col = label.col, cex = cex)
+                 .marker.label.cm(x, y, grad = "v", marker.val, expand = tick.size, col = col, label.on.off = label.on.off, side = side, pos = posin, offset = offset, label.col = label.col, cex = cex)
                else 
-                 .marker.label.cm(x, y, grad = -1/coef[2], marker.val, expand = tick.size, col = col, label.on.off = label.on.off, side = side, pos = pos, offset = offset, label.col = label.col, cex = cex)
+                 .marker.label.cm(x, y, grad = -1/coef[2], marker.val, expand = tick.size, col = col, label.on.off = label.on.off, side = side, pos = posin, offset = offset, label.col = label.col, cex = cex)
 }
 .lin.axes.plot <- function(z.axes, ax.style, predict.mat) {
            for (i in 1:length(ax.style$which)) 
@@ -1814,24 +1817,27 @@ draw.biplot <- function (Z, G = matrix(1, nrow = nrow(Z), ncol = 1), classes = 1
               }
 }
 .nominal.axes.plot <- function(z.axes, ax.style, predict.mat) {
-          for (i in 1:length(ax.style$which)) 
+          marker.mat <- list()
+          lin.coef <- list()
+          require(colorspace)
+          for (i in 1:length(ax.style$which)) ##axes first
             {  ax.num <- ax.style$which[i]
-               marker.mat <- z.axes[[i]][z.axes[[i]][, 4] == 1, 1:3]
-               marker.mat <- marker.mat[order(marker.mat[, 1]), ]
+               marker.mat[[i]] <- z.axes[[i]][z.axes[[i]][, 4] == 1, 1:3]
+               marker.mat[[i]] <- marker.mat[[i]][order(marker.mat[[i]][, 1]), ]
                ends.mat <- c(usr[1],NA)
-               k <- nrow(marker.mat)
-               for (j in 2:nrow(marker.mat))
-                 ends.mat <- rbind (ends.mat, (marker.mat[j,1:2]+marker.mat[j-1,1:2])/2)
+               k <- nrow(marker.mat[[i]])
+               for (j in 2:nrow(marker.mat[[i]]))
+                 ends.mat <- rbind (ends.mat, (marker.mat[[i]][j,1:2]+marker.mat[[i]][j-1,1:2])/2)
                ends.mat <- rbind (ends.mat, c(usr[2],NA))
-               x.vals <- marker.mat[, 1]
-               y.vals <- marker.mat[, 2]
-               lin.coef <- coefficients(lm(y.vals ~ x.vals))
-               if (is.na(lin.coef[2])) {  ends.mat[1,1] <- ends.mat[k+1,1] <- 0
+               x.vals <- marker.mat[[i]][, 1]
+               y.vals <- marker.mat[[i]][, 2]
+               lin.coef[[i]] <- coefficients(lm(y.vals ~ x.vals))
+               if (is.na(lin.coef[[i]][2])) {  ends.mat[1,1] <- ends.mat[k+1,1] <- 0
                                           ends.mat[1,2] <- usr[3]
                                           ends.mat[k+1,2] <- usr[4]
                                        }
-               else {  ends.mat[1,2] <- lin.coef[1] + ends.mat[1,1]*lin.coef[2]
-                       ends.mat[k+1,2] <- lin.coef[1] + ends.mat[k+1,1]*lin.coef[2]
+               else {  ends.mat[1,2] <- lin.coef[[i]][1] + ends.mat[1,1]*lin.coef[[i]][2]
+                       ends.mat[k+1,2] <- lin.coef[[i]][1] + ends.mat[k+1,1]*lin.coef[[i]][2]
                     }
                if (ax.style$label == "Hor") {  par(las = 1)
                                                adjust <- c(0.5, 1, 0.5, 0)       }
@@ -1839,25 +1845,25 @@ draw.biplot <- function (Z, G = matrix(1, nrow = nrow(Z), ncol = 1), classes = 1
                                                  adjust <- c(1, 1, 0, 0)         }
                if (ax.style$label == "Paral") {  par(las = 0)
                                                  adjust <- c(0.5, 0.5, 0.5, 0.5) }
-               h <- nrow(marker.mat)
-               if (is.na(lin.coef[2])) 
+               h <- nrow(marker.mat[[i]])
+               if (is.na(lin.coef[[i]][2])) 
                  { if (y.vals[1] < y.vals[h]) 
                       mtext(text = ax.style$names[i], side = 1, line = ax.style$label.dist[i], adj = adjust[1], at = x.vals[1], col = ax.style$label.col[i], cex = ax.style$label.cex[i])
                    else 
                       mtext(text = ax.style$names[i], side = 3, line = ax.style$label.dist[i], adj = adjust[3], at = y.vals[1], col = ax.style$label.col[i], cex = ax.style$label.cex[i])
                  }
                else 
-                  { y1.ster <- lin.coef[2] * usr[1] + lin.coef[1]
-                    y2.ster <- lin.coef[2] * usr[2] + lin.coef[1]
-                    x1.ster <- (usr[3] - lin.coef[1])/lin.coef[2]
-                    x2.ster <- (usr[4] - lin.coef[1])/lin.coef[2]
-                    if (lin.coef[2] == 0) 
+                  { y1.ster <- lin.coef[[i]][2] * usr[1] + lin.coef[[i]][1]
+                    y2.ster <- lin.coef[[i]][2] * usr[2] + lin.coef[[i]][1]
+                    x1.ster <- (usr[3] - lin.coef[[i]][1])/lin.coef[[i]][2]
+                    x2.ster <- (usr[4] - lin.coef[[i]][1])/lin.coef[[i]][2]
+                    if (lin.coef[[i]][2] == 0) 
                       { if (x.vals[1] < x.vals[h]) 
                           mtext(text = ax.style$names[i], side = 2, line = ax.style$label.dist[i], adj = adjust[2], at = y.vals[1], col = ax.style$label.col[i], cex = ax.style$label.cex[i])
                         else 
                           mtext(text = ax.style$names[i], side = 4, line = ax.style$label.dist[i], adj = adjust[4], at = y.vals[1], col = ax.style$label.col[i], cex = ax.style$label.cex[i])
                       }
-                    if (lin.coef[2] > 0) 
+                    if (lin.coef[[i]][2] > 0) 
                       {  if (x.vals[1] < x.vals[h]) 
                            if (y1.ster <= usr[4] & y1.ster >= usr[3]) 
                              mtext(text = ax.style$names[i], side = 2, line = ax.style$label.dist[i], adj = adjust[2], at = y1.ster, col = ax.style$label.col[i], cex = ax.style$label.cex[i])
@@ -1868,7 +1874,7 @@ draw.biplot <- function (Z, G = matrix(1, nrow = nrow(Z), ncol = 1), classes = 1
                               else 
                                 mtext(text = ax.style$names[i], side = 3, line = ax.style$label.dist[i], adj = adjust[3], at = x2.ster, col = ax.style$label.col[i], cex = ax.style$label.cex[i])
                       }
-                    if (lin.coef[2] < 0) 
+                    if (lin.coef[[i]][2] < 0) 
                       {  if (x.vals[1] < x.vals[h]) 
                            if (y1.ster <= usr[4] & y1.ster >= usr[3]) 
                              mtext(text = ax.style$names[i], side = 2, line = ax.style$label.dist[i], adj = adjust[2], at = y1.ster, col = ax.style$label.col[i], cex = ax.style$label.cex[i])
@@ -1883,42 +1889,56 @@ draw.biplot <- function (Z, G = matrix(1, nrow = nrow(Z), ncol = 1), classes = 1
                for (j in 1:k)
                   
                  {  
-                  lines (x=ends.mat[(0:1)+j,1], y=ends.mat[(0:1)+j,2], col="darkolivegreen", lwd = 4*ax.style$lwd[i], lty = ax.style$lty[i])
-                  .marker.func(c(marker.mat[j,],as.numeric(ax.style$tick.label[i])), coef = lin.coef, col =  ax.style$col[[i]][j], 
-                               tick.size = ax.style$tick.size[i]*0.001, side = ax.style$tick.label.side[i], pos = ax.style$tick.label.pos[i], 
-                               offset = ax.style$tick.label.offset[i], label.col = ax.style$tick.label.col[i], 
-                               cex = ax.style$tick.label.cex[i])
+                  lines (x=ends.mat[(0:1)+j,1], y=ends.mat[(0:1)+j,2], col=darken(ax.style$col[[i]][j],0.2), lwd = 4*ax.style$lwd[i], lty = ax.style$lty[i])
+                  #.marker.func(c(marker.mat[j,],as.numeric(ax.style$tick.label[i])), coef = lin.coef, col =  ax.style$col[[i]][j], 
+                  #             tick.size = ax.style$tick.size[i]*0.001, side = ax.style$tick.label.side[i], pos = ax.style$tick.label.pos[i], 
+                  #             offset = ax.style$tick.label.offset[i], label.col = ax.style$tick.label.col[i], 
+                  #             cex = ax.style$tick.label.cex[i])
                   
                   
                   
                   lines (x=ends.mat[(0:1)+j,1], y=ends.mat[(0:1)+j,2], col=ax.style$col[[i]][j], lwd = 2*ax.style$lwd[i], lty = ax.style$lty[i])
-                    .marker.func(c(marker.mat[j,],as.numeric(ax.style$tick.label[i])), coef = lin.coef, col = ax.style$col[[i]][j], 
-                                    tick.size = ax.style$tick.size[i]*0.001, side = ax.style$tick.label.side[i], pos = ax.style$tick.label.pos[i], 
-                                    offset = ax.style$tick.label.offset[i], label.col = ax.style$tick.label.col[i], 
-                                    cex = ax.style$tick.label.cex[i])
+                   # .marker.func(c(marker.mat[[i]][j,],as.numeric(ax.style$tick.label[i])), coef = lin.coef[[i]], col = ax.style$col[[i]][j], 
+                   #                 tick.size = ax.style$tick.size[i]*0.001, side = ax.style$tick.label.side[i], pos = ax.style$tick.label.pos[i], 
+                   #                 offset = ax.style$tick.label.offset[i], label.col = ax.style$tick.label.col[i], 
+                   #                 cex = ax.style$tick.label.cex[i])
                             }
-               if (!is.null(predict.mat)) apply(cbind(predict.mat, y.vals[1]), 1, .predict.func, coef = lin.coef, col = ax.style$predict.col[i], lty = ax.style$predict.lty[i], lwd = ax.style$predict.lwd[i])
+               if (!is.null(predict.mat)) apply(cbind(predict.mat, y.vals[1]), 1, .predict.func, coef = lin.coef[[i]], col = ax.style$predict.col[i], lty = ax.style$predict.lty[i], lwd = ax.style$predict.lwd[i])
+          }
+          for (i in 1:length(ax.style$which)) ##then labels
+          {
+             k <- nrow(marker.mat[[i]])
+             for (j in 1:k)
+                
+             {  
+             .marker.func(c(marker.mat[[i]][j,],as.numeric(ax.style$tick.label[i])), coef = lin.coef[[i]], col = ax.style$col[[i]][j], 
+                          tick.size = ax.style$tick.size[i]*0.001, side = ax.style$tick.label.side[i], pos = ax.style$tick.label.pos[i], 
+                          offset = ax.style$tick.label.offset[i], label.col = ax.style$tick.label.col[i], 
+                          cex = ax.style$tick.label.cex[i])
+             }
           }
 }
 .ordinal.axes.plot <- function(z.axes, ax.style, predict.mat) {
-          for (i in 1:length(ax.style$which)) 
+          marker.mat <- list()
+         lin.coef <- list()
+          for (i in 1:length(ax.style$which)) #first axes
             {  ax.num <- ax.style$which[i]
-               marker.mat <- z.axes[[i]][z.axes[[i]][, 4] == 1, 1:3]
-               marker.mat <- marker.mat[order(marker.mat[, 1]), ]
+               marker.mat[[i]] <- z.axes[[i]][z.axes[[i]][, 4] == 1, 1:3]
+               marker.mat[[i]] <- marker.mat[[i]][order(marker.mat[[i]][, 1]), ]
                ends.mat <- c(usr[1],NA)
-               k <- nrow(marker.mat)
-               for (j in 2:nrow(marker.mat))
-                 ends.mat <- rbind (ends.mat, (marker.mat[j,1:2]+marker.mat[j-1,1:2])/2)
+               k <- nrow(marker.mat[[i]])
+               for (j in 2:nrow(marker.mat[[i]]))
+                 ends.mat <- rbind (ends.mat, (marker.mat[[i]][j,1:2]+marker.mat[[i]][j-1,1:2])/2)
                ends.mat <- rbind (ends.mat, c(usr[2],NA))
-               x.vals <- marker.mat[, 1]
-               y.vals <- marker.mat[, 2]
-               lin.coef <- coefficients(lm(y.vals ~ x.vals))
-               if (is.na(lin.coef[2])) {  ends.mat[1,1] <- ends.mat[k+1,1] <- 0
+               x.vals <- marker.mat[[i]][, 1]
+               y.vals <- marker.mat[[i]][, 2]
+               lin.coef[[i]] <- coefficients(lm(y.vals ~ x.vals))
+               if (is.na(lin.coef[[i]][2])) {  ends.mat[1,1] <- ends.mat[k+1,1] <- 0
                                           ends.mat[1,2] <- usr[3]
                                           ends.mat[k+1,2] <- usr[4]
                                        }
-               else {  ends.mat[1,2] <- lin.coef[1] + ends.mat[1,1]*lin.coef[2]
-                       ends.mat[k+1,2] <- lin.coef[1] + ends.mat[k+1,1]*lin.coef[2]
+               else {  ends.mat[1,2] <- lin.coef[[i]][1] + ends.mat[1,1]*lin.coef[[i]][2]
+                       ends.mat[k+1,2] <- lin.coef[[i]][1] + ends.mat[k+1,1]*lin.coef[[i]][2]
                     }
                if (ax.style$label == "Hor") {  par(las = 1)
                                                adjust <- c(0.5, 1, 0.5, 0)       }
@@ -1926,25 +1946,29 @@ draw.biplot <- function (Z, G = matrix(1, nrow = nrow(Z), ncol = 1), classes = 1
                                                  adjust <- c(1, 1, 0, 0)         }
                if (ax.style$label == "Paral") {  par(las = 0)
                                                  adjust <- c(0.5, 0.5, 0.5, 0.5) }
-               h <- nrow(marker.mat)
-               if (is.na(lin.coef[2])) 
+               h <- nrow(marker.mat[[i]])
+               if (is.na(lin.coef[[i]][2])) 
                  { if (y.vals[1] < y.vals[h]) 
                       mtext(text = ax.style$names[i], side = 1, line = ax.style$label.dist[i], adj = adjust[1], at = x.vals[1], col = ax.style$label.col[i], cex = ax.style$label.cex[i])
                    else 
                       mtext(text = ax.style$names[i], side = 3, line = ax.style$label.dist[i], adj = adjust[3], at = y.vals[1], col = ax.style$label.col[i], cex = ax.style$label.cex[i])
                  }
                else 
-                  { y1.ster <- lin.coef[2] * usr[1] + lin.coef[1]
-                    y2.ster <- lin.coef[2] * usr[2] + lin.coef[1]
-                    x1.ster <- (usr[3] - lin.coef[1])/lin.coef[2]
-                    x2.ster <- (usr[4] - lin.coef[1])/lin.coef[2]
-                    if (lin.coef[2] == 0) 
+                  {
+                     
+                     y1.ster <- lin.coef[[i]][2] * usr[1] + lin.coef[[i]][1]
+                    y2.ster <- lin.coef[[i]][2] * usr[2] + lin.coef[[i]][1]
+                    x1.ster <- (usr[3] - lin.coef[[i]][1])/lin.coef[[i]][2]
+                    x2.ster <- (usr[4] - lin.coef[[i]][1])/lin.coef[[i]][2]
+                     
+         
+                    if (lin.coef[[i]][2] == 0) 
                       { if (x.vals[1] < x.vals[h]) 
                           mtext(text = ax.style$names[i], side = 2, line = ax.style$label.dist[i], adj = adjust[2], at = y.vals[1], col = ax.style$label.col[i], cex = ax.style$label.cex[i])
                         else 
                           mtext(text = ax.style$names[i], side = 4, line = ax.style$label.dist[i], adj = adjust[4], at = y.vals[1], col = ax.style$label.col[i], cex = ax.style$label.cex[i])
                       }
-                    if (lin.coef[2] > 0) 
+                    if (lin.coef[[i]][2] > 0) 
                       {  if (x.vals[1] < x.vals[h]) 
                            if (y1.ster <= usr[4] & y1.ster >= usr[3]) 
                              mtext(text = ax.style$names[i], side = 2, line = ax.style$label.dist[i], adj = adjust[2], at = y1.ster, col = ax.style$label.col[i], cex = ax.style$label.cex[i])
@@ -1955,7 +1979,7 @@ draw.biplot <- function (Z, G = matrix(1, nrow = nrow(Z), ncol = 1), classes = 1
                               else 
                                 mtext(text = ax.style$names[i], side = 3, line = ax.style$label.dist[i], adj = adjust[3], at = x2.ster, col = ax.style$label.col[i], cex = ax.style$label.cex[i])
                       }
-                    if (lin.coef[2] < 0) 
+                    if (lin.coef[[i]][2] < 0) 
                       {  if (x.vals[1] < x.vals[h]) 
                            if (y1.ster <= usr[4] & y1.ster >= usr[3]) 
                              mtext(text = ax.style$names[i], side = 2, line = ax.style$label.dist[i], adj = adjust[2], at = y1.ster, col = ax.style$label.col[i], cex = ax.style$label.cex[i])
@@ -1972,13 +1996,21 @@ draw.biplot <- function (Z, G = matrix(1, nrow = nrow(Z), ncol = 1), classes = 1
                for (j in 1:k)
                  {  
                     lines (x=ends.mat[(0:1)+j,1], y=ends.mat[(0:1)+j,2], col=ax.style$col[[i]], lwd = lwd.vec[j], lty = ax.style$lty[i])
-                    .marker.func(c(marker.mat[j,],as.numeric(ax.style$tick.label[i])), coef = lin.coef, col = ax.style$tick.col[i], 
-                                    tick.size = ax.style$tick.size[i], side = ax.style$tick.label.side[i], pos = ax.style$tick.label.pos[i], 
-                                    offset = ax.style$tick.label.offset[i], label.col = ax.style$tick.label.col[i], 
-                                    cex = ax.style$tick.label.cex[i])
+
                             }
-               if (!is.null(predict.mat)) apply(cbind(predict.mat, y.vals[1]), 1, .predict.func, coef = lin.coef, col = ax.style$predict.col[i], lty = ax.style$predict.lty[i], lwd = ax.style$predict.lwd[i])
+               if (!is.null(predict.mat)) apply(cbind(predict.mat, y.vals[1]), 1, .predict.func, coef = lin.coef[[i]], col = ax.style$predict.col[i], lty = ax.style$predict.lty[i], lwd = ax.style$predict.lwd[i])
           }
+          for (i in 1:length(ax.style$which)) #then labels
+          {
+             k <- nrow(marker.mat[[i]])
+             for (j in 1:k)
+             {
+                .marker.func(c(marker.mat[[i]][j,],as.numeric(ax.style$tick.label[i])), coef = lin.coef[[i]], col = ax.style$tick.col[i], 
+                             tick.size = ax.style$tick.size[i], side = ax.style$tick.label.side[i], pos = ax.style$tick.label.pos[i], 
+                             offset = ax.style$tick.label.offset[i], label.col = ax.style$tick.label.col[i], 
+                             cex = ax.style$tick.label.cex[i]) 
+             }
+           }
 }
 
 
@@ -2098,6 +2130,7 @@ draw.biplot.1D <- function (Z, G = matrix(1, nrow = nrow(Z), ncol = 1), classes 
           mm <- 1/(uin[1] * 25.4)
           d <- tick.size * mm
           lines(rep(x, 2), c(y - d, y + d), col = col)
+          if (pos == 0) pos <- NULL
           if (label.on.off == 1) 
             text(x, y - d, label = marker.val, pos = pos, offset = offset, col = label.col, cex = cex)
 }
@@ -2207,25 +2240,27 @@ draw.biplot.3D <- function (Z, G = matrix(1, nrow = nrow(Z), ncol = 1), classes 
                       mm <- 1/(uin[1] * 25.4)
                       d <- expand * mm
                       if (grad == "v") { lines(rep(x, 2), c(y - d, y + d), col = col)
-                                         if (label.on.off == 1) text(x, y - d, label = marker.val, pos = pos, offset = offset, col = label.col, cex = cex)        }
+                                         if (label.on.off == 1) text(x, y - d, label = marker.val, pos = posin, offset = offset, col = label.col, cex = cex)        }
                       if (grad == "h") { lines(c(x - d, x + d), rep(y, 2), col = col)
-                                         if (label.on.off == 1) if (side == "right") text(x + d, y, label = marker.val, pos = pos, offset = offset, col = label.col, cex = cex)
-                                                                else text(x - d, y, label = marker.val, pos = pos, offset = offset, col = label.col, cex = cex)                    }
+                                         if (label.on.off == 1) if (side == "right") text(x + d, y, label = marker.val, pos = posin, offset = offset, col = label.col, cex = cex)
+                                                                else text(x - d, y, label = marker.val, pos = posin, offset = offset, col = label.col, cex = cex)                    }
                       if (is.numeric(grad)) {  b <- d * sqrt(1/(1 + grad * grad))
                                                a <- b * grad
                                                lines(c(x - b, x + b), c(y - a, y + a), col = col)
-                                               if (label.on.off == 1) if (side == "right") text(x + b, y + a, label = marker.val, pos = pos, offset = offset, col = label.col, cex = cex)
-                                                                      else text(x - b, y - a, label = marker.val, pos = pos, offset = offset, col = label.col, cex = cex)                   }
+                                               if (label.on.off == 1) if (side == "right") text(x + b, y + a, label = marker.val, pos = posin, offset = offset, col = label.col, cex = cex)
+                                                                      else text(x - b, y - a, label = marker.val, pos = posin, offset = offset, col = label.col, cex = cex)                   }
 }
 
 .marker.func <- function(vec, coef, col, tick.size, side, pos, offset, label.col, cex) {
                   x <- vec[1]
                   y <- vec[2]
+                  posin <- pos
+                  if (posin == 0) posin <- NULL
                   marker.val <- vec[3]
                   label.on.off <- vec[4]
-                  if (is.na(coef[2])) .marker.label.cm(x, y, grad = "h", marker.val, expand = tick.size,  col = col, label.on.off = label.on.off, side = side, pos = pos, offset = offset, label.col = label.col, cex = cex)
-                 else if (coef[2] == 0) .marker.label.cm(x, y, grad = "v", marker.val, expand = tick.size, col = col, label.on.off = label.on.off, side = side, pos = pos, offset = offset, label.col = label.col, cex = cex)
-                      else .marker.label.cm(x, y, grad = -1/coef[2], marker.val, expand = tick.size, col = col, label.on.off = label.on.off, side = side, pos = pos, offset = offset, label.col = label.col, cex = cex)
+                  if (is.na(coef[2])) .marker.label.cm(x, y, grad = "h", marker.val, expand = tick.size,  col = col, label.on.off = label.on.off, side = side, pos = posin, offset = offset, label.col = label.col, cex = cex)
+                 else if (coef[2] == 0) .marker.label.cm(x, y, grad = "v", marker.val, expand = tick.size, col = col, label.on.off = label.on.off, side = side, pos = posin, offset = offset, label.col = label.col, cex = cex)
+                      else .marker.label.cm(x, y, grad = -1/coef[2], marker.val, expand = tick.size, col = col, label.on.off = label.on.off, side = side, pos = posin, offset = offset, label.col = label.col, cex = cex)
 }
 
 .lin.axes.plot <- function(z.axes, ax.style, predict.mat) {
@@ -2793,6 +2828,7 @@ CVAbiplot <- function (X, G = NULL, dim.biplot = c(2, 1, 3), e.vects = 1:ncol(X)
    legend.type <- do.call("biplot.legend.type.control", legend.type)
    
    Z.region <- NULL
+   assign("testb1", prior.p,envir=globalenv())
    if (dim.biplot == 2 & !is.null(prior.p))
      {
        class.regions <- do.call("biplot.class.region.control", c(J, class.regions))
@@ -3032,14 +3068,16 @@ ax.present <- TRUE
 if (sum(factor.type=="nom")>0) 
 {
    ax.nominal <- do.call("biplot.nominal.ax.control", c(sum(factor.type=="nom"), 
-                                                        list(var.names[1:length(factor.type)][factor.type=="nom"]), list(Lk[factor.type=="nom"]), ax.nominal,tick.label.col="black",label.col = "black"))
+                                                        list(var.names[1:length(factor.type)][factor.type=="nom"]), list(Lk[factor.type=="nom"]), ax.nominal))
+                                                        #,tick.label.col="black",label.col = "black"))
    ax.nominal.present <- TRUE
 }
 
 if (sum(factor.type=="ord")>0)
 { 
    ax.ordinal <- do.call("biplot.ordinal.ax.control", c(sum(factor.type=="ord"), 
-                                                        list(var.names[1:length(factor.type)][factor.type=="ord"]), list(Lk[factor.type=="ord"]), ax.ordinal,tick.label.col="black",label.col = "black"))
+                                                        list(var.names[1:length(factor.type)][factor.type=="ord"]), list(Lk[factor.type=="ord"]), ax.ordinal))
+                                                        #,tick.label.col="black",label.col = "black"))
    ax.ordinal.present <- TRUE
 }
 if (!ax.present) ax <- NULL
@@ -3163,6 +3201,7 @@ legend.type <- do.call("biplot.legend.type.control", legend.type)
 
 K <- min(p+ncol(Xcont), J - 1)
 Z.region <- NULL
+assign("testb2", prior.p,envir=globalenv())
 if (dim.biplot == 2 & !is.null(prior.p))
 {
    class.regions <- do.call("biplot.class.region.control", c(J, class.regions))
@@ -3614,8 +3653,8 @@ CVA_H<-
                        list(var.names[1:length(factor.type)][factor.type ==
                                                                 "nom"]),
                        list(Lk[factor.type == "nom"]),
-                       ax.nominal
-                       ,tick.label.col="black",label.col = "black"))
+                       ax.nominal))
+                      # ,tick.label.col="black",label.col = "black"))
          ax.nominal.present <- TRUE
       }
       
@@ -3628,8 +3667,8 @@ CVA_H<-
                        list(var.names[1:length(factor.type)][factor.type ==
                                                                 "ord"]),
                        list(Lk[factor.type == "ord"]),
-                       ax.ordinal
-                       ,tick.label.col="black",label.col = "black"))
+                       ax.ordinal))
+                       #,tick.label.col="black",label.col = "black"))
          ax.ordinal.present <- TRUE
       }
       if (!ax.present)
@@ -3855,7 +3894,7 @@ CVA_H<-
       legend.format <- do.call("biplot.legend.control", legend.format)
       legend.type <- do.call("biplot.legend.type.control", legend.type)
       
-      
+      assign("testb3", prior.p,envir=globalenv())
       Z.region <- NULL
       if (dim.biplot == 2 & !is.null(prior.p))
       {

@@ -4,7 +4,7 @@ Install.packagesCatCVA <- function() {
   #ensures all packages are installed
   
   list.of.packages <-
-    c("Matrix", "caret", "MASS", "ratte.data", "readxl", "e1071","klaR", "glmnet", "randomForest", "shinybusy")
+    c("Matrix", "caret", "MASS", "ratte.data", "readxl", "e1071","klaR", "glmnet", "randomForest", "shinybusy", "colorspace")
   new.packages <-
     list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
   
@@ -17,6 +17,7 @@ Install.packagesCatCVA <- function() {
   library(glmnet)
   library(randomForest)
   library(shinybusy)
+  library(colorspace)
   
   #imports all necessary biplot drawing functions
   
@@ -100,7 +101,11 @@ ui <- tagList(
         linebreaks(1)
         ,
         h5(strong("Confusion matrix:")),
-        tableOutput("confusion.iris")
+        tableOutput("confusion.iris"), 
+        checkboxInput("alphaincl", label = strong("Alpha-bags:"), value = TRUE),
+        sliderInput("alphasize", "", min = 0, max = 99, value = 85, step = 5, post = "%"),
+        checkboxInput("obsplot", label = strong("Plot observations"), value = TRUE),
+        sliderInput("ticksize", "Tick label size (%)", min = 0, max = 99, value = 50, step = 5, post = "%"),
       )
       
       
@@ -176,10 +181,13 @@ levels(mushroom$spore_print_color) <- c("buff", "chocolate", "black", "brown", "
 levels(mushroom$population) <- c("abundant", "clustered", "numerous", "scattered", "several", "solitary")
 levels(mushroom$habitat) <- c("wood", "grasses", "leaves", "meadows", "paths", "urban", "waste")
 
+mushroom$gill_size <- factor(mushroom$gill_size, levels = c("broad", "narrow"), ordered = T)
+mushroom$ring_number <- factor(mushroom$ring_number, levels = c("none", "one", "two"), ordered = T) 
+
 rf.fit<-randomForest(edibility~.,data=mushroom)
 rf.imp<-order(-rf.fit$importance)
-
-
+#type <- c(rep("nom",16),"nom",rep("nom",4))
+type <- c(rep("nom",7),"ord",rep("nom",8), "ord", rep("nom",4))
 #---------encoding
 
 
@@ -196,18 +204,24 @@ producePlot <-function(){
   
   renderPlot({
     bipltype.iris <<- input$bipltype.iris
-    class.reg.choice.iris <<- input$classreg.iris
+    #class.reg.choice.iris <<- input$classreg.iris
     hrank.iris <<-input$hrank.iris
-    class.col.iris <<- NULL
+    #class.col.iris <<- NULL
     numvars.iris <<- input$numvars.iris
-   
+    classprior <<- "equal"
     
-    if(class.reg.choice.iris == TRUE){
-      class.reg.choice.iris <<- "equal"
-      class.col.iris <<-  c("#808080FF", "#BBBBBBFF")
+    require (RColorBrewer)
+    colin <- c(brewer.pal(12,"Set3")[-2],brewer.pal(8,"Set2"),brewer.pal(8,"Accent"),brewer.pal(7,"Dark2"))
+    
+    classcols <-  gray.colors(2, start = 0.7, end = 0.9, gamma = 2.2, alpha = NULL)
+    
+    if(input$classreg.iris == TRUE){
+      #classprior <<- "equal"
+      class.col.iris <<-  classcols
     }
     else{
-      class.reg.choice.iris <<- NULL 
+      #classprior <<- NULL
+      class.col.iris <<- c("white","white")
     }
     
     
@@ -217,7 +231,7 @@ producePlot <-function(){
     
     rf.names<-rownames(rf.fit$importance)[rf.imp][1:varstoplot]
     
-    mushroom.cat.order<-match(rf.names, colnames(mushroom))
+    mushroom.cat.order<<-match(rf.names, colnames(mushroom))
     
     
     encoding_func<-function(x){
@@ -241,11 +255,14 @@ producePlot <-function(){
           X = encode_full,
           G = indmat(mushroom[,1]),
           sample.pch = c(21, 22),
-          prior.p = class.reg.choice.iris,
-          region.colours = class.col.iris
+          prior.p = classprior,
+          region.colours = class.col.iris, 
+          ax = list(tick.label.cex = 1.5*input$ticksize/100, label.cex = 1.5*input$ticksize/100, r), 
+          alpha.bags = list(which = 1:2*input$alphaincl, alpha = input$alphasize/100, col = darken(class.col.iris,0.4)),
+          samples = list(cex = 1*input$obsplot)
         )
         par(xpd=TRUE)
-        legend("bottom", legend=c("Edible","Poisonous"), box.col = "white",pt.lwd=0.5, pt.cex=1,lty=1, cex=0.85,pt.bg = gray.colors(2, start = 0.5, end = 0.9, gamma = 2.2, alpha = NULL) ,pch=c(21,22) ,bg="white",lwd=1,bty="o",horiz=T,inset=c(0,-0.14))
+        legend("bottom", legend=c("Edible","Poisonous"), box.col = "white",pt.lwd=0.5, pt.cex=1,lty=1, cex= 1.5*input$ticksize/100,pt.bg = classcols ,pch=c(21,22) ,bg="white",lwd=1,bty="o",horiz=T,inset=c(0,-0.14))
         par(xpd=FALSE)
       }
       
@@ -257,15 +274,26 @@ producePlot <-function(){
             Xcont = NULL,
             G = indmat(mushroom[,1]),
             sample.pch = c(21, 22),
-            prior.p = class.reg.choice.iris,
+            factor.type = type[mushroom.cat.order-1], 
+            prior.p = classprior,
             region.colours = class.col.iris,
-            scaled.mat = TRUE
+            scaled.mat = TRUE,
+            ax = list(tick.label.cex = 1.5*input$ticksize/100, label.cex = 1.5*input$ticksize/100), 
+            ax.nominal = list(tick.label.cex = 1.5*input$ticksize/100, label.cex = 1.5*input$ticksize/100,  tick.label.offset = 0, tick.label.pos = 0,
+                              col = as.list(lighten(colin,0.5)), tick.col = darken(colin,0.5), label.col =  darken(colin,0.5)),
+            ax.ordinal = list(tick.label.cex = 1.5*input$ticksize/100, label.cex = 1.5*input$ticksize/100,  tick.label.offset = 0, tick.label.pos = 0,
+                              col = as.list(colin), tick.col = darken(colin,0.5), label.col =  darken(colin,0.5)),
+            alpha.bags = list(which = 1:2*input$alphaincl, alpha = input$alphasize/100, col = darken(class.col.iris,0.4)),
+            samples = list(cex = 1*input$obsplot)
           )
         par(xpd=TRUE)
-        legend("bottom", legend=c("Edible","Poisonous"), box.col = "white",pt.lwd=0.5, pt.cex=1,lty=1, cex=0.85,pt.bg = gray.colors(2, start = 0.5, end = 0.9, gamma = 2.2, alpha = NULL) ,pch=c(21,22) ,bg="white",lwd=1,bty="o",horiz=T,inset=c(0,-0.14))
+        legend("bottom", legend=c("Edible","Poisonous"), box.col = "white",pt.lwd=0.5, pt.cex=1,lty=1, cex= 1.5*input$ticksize/100,pt.bg = classcols ,pch=c(21,22) ,bg="white",lwd=1,bty="o",horiz=T,inset=c(0,-0.14))
         par(xpd=FALSE)
         
       }
+      
+
+      
       
       if (bipltype.iris == "CVA H") {
         rv <<-
@@ -274,13 +302,21 @@ producePlot <-function(){
             Xcont = NULL,
             G = indmat(mushroom[,1]),
             sample.pch = c(21, 22),
+            factor.type = type[mushroom.cat.order-1], 
             h.rank = hrank.iris,
-            prior.p = class.reg.choice.iris,
+            prior.p = classprior,
             region.colours = class.col.iris,
-            scaled.mat = TRUE
+            scaled.mat = TRUE,
+            ax = list(tick.label.cex = 1.5*input$ticksize/100, label.cex = 1.5*input$ticksize/100), 
+            ax.nominal = list(tick.label.cex = 1.5*input$ticksize/100, label.cex = 1.5*input$ticksize/100,  tick.label.offset = 0, tick.label.pos = 0,
+                              col = as.list(lighten(colin,0.5)), tick.col = darken(colin,0.5), label.col =  darken(colin,0.5)),
+            ax.ordinal = list(tick.label.cex = 1.5*input$ticksize/100, label.cex = 1.5*input$ticksize/100,  tick.label.offset = 0, tick.label.pos = 0,
+                              col = as.list(colin), tick.col = darken(colin,0.5), label.col =  darken(colin,0.5)),
+            alpha.bags = list(which = 1:2*input$alphaincl, alpha = input$alphasize/100, col = darken(class.col.iris,0.4)),
+            samples = list(cex = 1*input$obsplot)
           )
         par(xpd=TRUE)
-        legend("bottom", legend=c("Edible","Poisonous"), box.col = "white",pt.lwd=0.5, pt.cex=1,lty=1, cex=0.85,pt.bg = gray.colors(2, start = 0.5, end = 0.9, gamma = 2.2, alpha = NULL) ,pch=c(21,22) ,bg="white",lwd=1,bty="o",horiz=T,inset=c(0,-0.14))
+        legend("bottom", legend=c("Edible","Poisonous"), box.col = "white",pt.lwd=0.5, pt.cex=1,lty=1, cex= 1.5*input$ticksize/100,pt.bg = classcols,pch=c(21,22) ,bg="white",lwd=1,bty="o",horiz=T,inset=c(0,-0.14))
         par(xpd=FALSE) 
         
       }
