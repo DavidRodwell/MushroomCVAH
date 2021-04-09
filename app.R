@@ -89,7 +89,7 @@ ui <- tagList(
         ,
         h5(strong("Data set information:")),
         h5("Number of classes: 2"),
-        h5("Number of attributes: 21 (21 nominal categorical)"),
+        h5("Number of attributes: 21 (19 nominal categorical, 2 ordinal categorical)"),
         h5("Number of observations: 8124"),
         linebreaks(1),
         h5(strong("Data set description:")),
